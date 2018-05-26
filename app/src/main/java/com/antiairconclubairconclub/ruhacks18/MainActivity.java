@@ -16,6 +16,7 @@ import android.util.Log;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -27,14 +28,24 @@ import java.util.HashMap;
 
 //following from tutorial at https://www.androidhive.info/2012/01/android-json-parsing-tutorial/
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
     double longitude;
     double latitude;
+
+
+    TextView lat;
+    TextView lon;
+    TextView shortest_dist;
 
     private String TAG = MainActivity.class.getSimpleName();
 
     private ProgressDialog pDialog;
     private ListView lv;
+
+
+    LocationManager lm;
+    Location location;
+    GPSTracker gps;
 
     // URL to get contacts JSON
     private static String url = "http://app.toronto.ca/opendata//ac_locations/locations.json?v=1.00";
@@ -53,38 +64,22 @@ public class MainActivity extends AppCompatActivity {
         locationList = new ArrayList<>();
 
         lv = (ListView) findViewById(R.id.list);
+        lat = findViewById(R.id.lat);
+        lon = findViewById(R.id.lon);
+        shortest_dist = findViewById(R.id.shortest_dist);
 
+        lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        Boolean permission_check = (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
+        while (!permission_check) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},1);
+            permission_check = (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
+        }
+        // create class object
+        gps = new GPSTracker(MainActivity.this);
+
+        //start the other processes
         new GetLocations().execute();
     }
-    LocationListener mLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(final Location location) {
-            longitude = location.getLongitude();
-            latitude = location.getLatitude();
-            Toast.makeText(getApplicationContext(),
-                    "LON: " + longitude + " LAT: " +latitude,
-                    Toast.LENGTH_LONG)
-                    .show();
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
-
-
-
 
 
     /**
@@ -122,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
                     for (int i = 0; i < locations.length(); i++) {
                         JSONObject c = locations.getJSONObject(i);
 
+                        //store the info from teh Json File
                         String locationTypeCd = c.getString("locationTypeCd");
                         String locationTypeDesc = c.getString("locationTypeDesc");
                         String locationCode = c.getString("locationCode");
@@ -130,8 +126,8 @@ public class MainActivity extends AppCompatActivity {
                         String address = c.getString("address");
                         String phone = c.getString("phone");
                         String notes = c.getString("notes");
-                        String lat = c.getString("lat");
-                        String lon = c.getString("lon");
+                        double lat = c.getDouble("lat");
+                        double lon = c.getDouble("lon");
 
 
                         // tmp hash map for single contact
@@ -146,10 +142,10 @@ public class MainActivity extends AppCompatActivity {
                         location.put("address", address);
                         location.put("phone", phone);
                         location.put("notes", notes);
-                        location.put("lat", lat);
-                        location.put("lon", lon);
+                        location.put("lat", String.valueOf(lat));
+                        location.put("lon", String.valueOf(lon));
 
-                        // adding contact to contact list
+                        // adding location to locationList
                         locationList.add(location);
                     }
                 } catch (final JSONException e) {
@@ -195,22 +191,79 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity.this, locationList, R.layout.list_item,
                     new String[]{ "locationTypeDesc","locationDesc","locationName","address","phone", "lat", "lon"},
                     new int[]{R.id.locationTypeDesc,R.id.locationDesc,R.id.locationName,R.id.address,R.id.phone, R.id.lat, R.id.lon});
-
             lv.setAdapter(adapter);
 
-            LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-            while (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},1);
+            // check if GPS enabled
+            if(gps.canGetLocation()) {
+                latitude = gps.getLatitude();
+                longitude = gps.getLongitude();
+                lat.setText("Lat: " + latitude);
+                lon.setText("Lon: " + longitude);
             }
 
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000,
-                    10000, mLocationListener);
+            //Used to get an inital distance and index
+            double shortestDistance = -1f;
+            int index_of_shortest_distance = -1;
 
+            for(int i=0; i <locationList.size();i++){
+                //get the hashmap objects and then get value from key lat and lon
+                String lat_string = locationList.get(i).get("lat");
+                String lon_string = locationList.get(i).get("lon");
+                //convert to double
+                double lat = Double.parseDouble(lat_string);
+                double lon = Double.parseDouble(lon_string);
+                //find shortest distance
+                if(shortestDistance == -1 || index_of_shortest_distance==-1){
+                    shortestDistance = distance(lat, lon, latitude, longitude, "K");
+                    index_of_shortest_distance = i;
+                }
+                else if(shortestDistance> distance(lat, lon,latitude, longitude, "K")){
+                    shortestDistance = distance(lat, lon, latitude, longitude, "K");
+                    index_of_shortest_distance = i;
+                }
+            }
+
+            //update the textview
+            shortest_dist.setText("Location: " + locationList.get(index_of_shortest_distance).get("locationName")
+                    +"  Lat: "+locationList.get(index_of_shortest_distance).get("lat")
+                    +" Lon: "+locationList.get(index_of_shortest_distance).get("lon"));
 
 
         }
 
+    }
+
+    /*
+        Functions below from https://www.geodatasource.com/developers/java
+        for
+     */
+    private static double distance(double lat1, double lon1, double lat2, double lon2, String unit) {
+        double theta = lon1 - lon2;
+        double dist = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta));
+        dist = Math.acos(dist);
+        dist = rad2deg(dist);
+        dist = dist * 60 * 1.1515;
+        if (unit == "K") {
+            dist = dist * 1.609344;
+        } else if (unit == "N") {
+            dist = dist * 0.8684;
+        }
+
+        return (dist);
+    }
+
+    /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+    /*::	This function converts decimal degrees to radians						 :*/
+    /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+    private static double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
+    }
+
+    /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+    /*::	This function converts radians to decimal degrees						 :*/
+    /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+    private static double rad2deg(double rad) {
+        return (rad * 180 / Math.PI);
     }
 
 

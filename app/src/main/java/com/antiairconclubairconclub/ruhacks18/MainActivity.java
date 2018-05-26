@@ -225,8 +225,8 @@ public class MainActivity extends AppCompatActivity{
 
             //update the textview
             shortest_dist.setText("Location: " + locationList.get(index_of_shortest_distance).get("locationName")
-                    +"  Lat: "+locationList.get(index_of_shortest_distance).get("lat")
-                    +" Lon: "+locationList.get(index_of_shortest_distance).get("lon"));
+                    +"\nLat: "+locationList.get(index_of_shortest_distance).get("lat")
+                    +"  Lon: "+locationList.get(index_of_shortest_distance).get("lon"));
 
 
         }

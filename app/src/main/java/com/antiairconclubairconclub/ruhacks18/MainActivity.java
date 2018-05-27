@@ -9,6 +9,8 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -88,25 +90,7 @@ public class MainActivity extends AppCompatActivity{
         your_loc_height = your_loc.getHeight();
         lat_lon_height = lat.getHeight();
 
-        view_all.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                if(toggle){
-//                    shortest_dist.setHeight(shortest_dist_height);
-//                    your_loc.setHeight(your_loc_height);
-//                    lat.setHeight(lat_lon_height);
-//                    lon.setHeight(lat_lon_height);
-//                }
-//                else{
-//                    shortest_dist.setHeight(0);
-//                    your_loc.setHeight(0);
-//                    lat.setHeight(0);
-//                    lon.setHeight(0);
-//
-//                }
-//                toggle = !toggle;
-            }
-        });
+
 
         lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Boolean permission_check = (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
@@ -116,6 +100,19 @@ public class MainActivity extends AppCompatActivity{
         }
         // create class object
         gps = new GPSTracker(MainActivity.this);
+
+        boolean internet_check = (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED);
+        if (!internet_check) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_NETWORK_STATE},1);
+            internet_check = (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED);
+        }
+        boolean isConnected = false;
+        ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        if((ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED)) {
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        }
+
 
         //start the other processes
         new GetLocations().execute();

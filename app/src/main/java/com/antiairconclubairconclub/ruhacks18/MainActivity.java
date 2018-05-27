@@ -284,10 +284,32 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
 
+            Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
+            String address_cool_location="";
+            try {
+                String lat_string = locationList.get(index_of_shortest_distance).get("lat");
+                String lon_string = locationList.get(index_of_shortest_distance).get("lon");
+                //convert to double
+                double lat = Double.parseDouble(lat_string);
+                double lon = Double.parseDouble(lon_string);
+                List<Address> addresses = geocoder.getFromLocation(lat, lon, 1);
+                Address obj = addresses.get(0);
+                String  add = obj.getAddressLine(0);
+
+                Log.e("Location", "Address" + add);
+                address_cool_location=add;
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+
+            }
+
             //update the textview
             shortest_dist.setText("Location: " + locationList.get(index_of_shortest_distance).get("locationName")
                     +"\nLat: "+locationList.get(index_of_shortest_distance).get("lat")
-                    +"  Lon: "+locationList.get(index_of_shortest_distance).get("lon"));
+                    +"  Lon: "+locationList.get(index_of_shortest_distance).get("lon")
+                    +"\n" + address_cool_location);
 
 
         }

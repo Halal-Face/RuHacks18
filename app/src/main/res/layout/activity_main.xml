@@ -21,6 +21,7 @@
             android:fontFamily="@font/ubuntu"
             android:padding="5dp"
             android:text="Closest Cooling Location"
+            android:gravity="center"
             android:textAlignment="center"
             android:textColor="@android:color/white"
             android:textSize="22sp" />
@@ -37,14 +38,17 @@
             android:textSize="18sp" />
 
         <TextView
-            android:id="@+id/textView5"
+            android:id="@+id/your_loc"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="0.5"
-            android:text="Your Location"
             android:fontFamily="@font/ubuntu"
-            android:textSize="16sp"
-            android:textAlignment="center" />
+            android:text="Your Location"
+            android:gravity="center"
+            android:background="#41c300"
+            android:textAlignment="center"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -72,17 +76,18 @@
         </LinearLayout>
 
         <TextView
-            android:id="@+id/textView4"
+            android:id="@+id/view_all"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:text="View All Cooling Locations"
-            android:textSize="22sp"
+            android:background="#41c300"
             android:fontFamily="@font/ubuntu"
             android:padding="6dp"
-            android:background="#41c300"
+            android:gravity="center"
+            android:text="View All Cooling Locations"
+            android:textAlignment="center"
             android:textColor="@android:color/white"
-            android:textAlignment="center" />
+            android:textSize="22sp" />
 
         <ListView
             android:id="@+id/list"

@@ -4,6 +4,8 @@ import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -13,6 +15,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -23,8 +26,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 //following from tutorial at https://www.androidhive.info/2012/01/android-json-parsing-tutorial/
 
@@ -36,6 +42,14 @@ public class MainActivity extends AppCompatActivity{
     TextView lat;
     TextView lon;
     TextView shortest_dist;
+    TextView view_all;
+    TextView your_loc;
+
+    Boolean toggle = false;
+
+    int shortest_dist_height;
+    int your_loc_height;
+    int lat_lon_height;
 
     private String TAG = MainActivity.class.getSimpleName();
 
@@ -67,6 +81,32 @@ public class MainActivity extends AppCompatActivity{
         lat = findViewById(R.id.lat);
         lon = findViewById(R.id.lon);
         shortest_dist = findViewById(R.id.shortest_dist);
+        view_all = findViewById(R.id.view_all);
+        your_loc = findViewById(R.id.your_loc);
+
+        shortest_dist_height = shortest_dist.getHeight();
+        your_loc_height = your_loc.getHeight();
+        lat_lon_height = lat.getHeight();
+
+        view_all.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                if(toggle){
+//                    shortest_dist.setHeight(shortest_dist_height);
+//                    your_loc.setHeight(your_loc_height);
+//                    lat.setHeight(lat_lon_height);
+//                    lon.setHeight(lat_lon_height);
+//                }
+//                else{
+//                    shortest_dist.setHeight(0);
+//                    your_loc.setHeight(0);
+//                    lat.setHeight(0);
+//                    lon.setHeight(0);
+//
+//                }
+//                toggle = !toggle;
+            }
+        });
 
         lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Boolean permission_check = (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
@@ -199,6 +239,27 @@ public class MainActivity extends AppCompatActivity{
                 longitude = gps.getLongitude();
                 lat.setText("Lat: " + latitude);
                 lon.setText("Lon: " + longitude);
+
+                /**
+                    Code for getting address from https://stackoverflow.com/questions/6172451/given-a-latitude-and-longitude-get-the-location-name?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+                 **/
+                Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
+                String address="";
+                try {
+
+                    List<Address> addresses = geocoder.getFromLocation(gps.getLatitude(), gps.getLongitude(), 1);
+                    Address obj = addresses.get(0);
+                    String  add = obj.getAddressLine(0);
+
+                    Log.e("Location", "Address" + add);
+                    address=add;
+
+                } catch (IOException e) {
+
+                    e.printStackTrace();
+
+                }
+                your_loc.setText("Your Location: "+address);
             }
 
             //Used to get an inital distance and index
